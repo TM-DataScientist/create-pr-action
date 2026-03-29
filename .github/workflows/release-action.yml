@@ -1,0 +1,37 @@
+name: Release action
+on:
+  # 手動実行専用のワークフロー
+  workflow_dispatch:
+    inputs:
+      # どのレベルでバージョンを上げるかを選ぶ
+      bump-level:
+        type: choice
+        # semantic versioning の patch / minor / major を選択肢として出す
+        options: [patch, minor, major]
+        required: true
+        # GitHub の実行画面に表示される説明文
+        description: Bump to patch or minor or major
+jobs:
+  release:
+    # GitHub-hosted runner 上で実行する
+    runs-on: ubuntu-latest
+    permissions:
+      # タグ作成と release 作成のためにリポジトリ書き込み権限を付与する
+      contents: write
+    steps:
+      # リポジトリの内容を runner にチェックアウトする
+      - uses: actions/checkout@v4
+      # バージョン更新、Git の実行ユーザー設定、Release 作成に必要な値を環境変数へ渡す
+      - env:
+          USERNAME: github-actions[bot]
+          EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          BUMP_LEVEL: ${{ inputs.bump-level }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # GitHub Actions から実行したコミットやタグの作成者情報を設定する
+          git config --global user.name "${USERNAME}"
+          git config --global user.email "${EMAIL}"
+          # 指定された bump-level に応じてバージョン番号を更新し、新しいバージョン文字列を受け取る
+          version="$(.github/scripts/bump.sh "${BUMP_LEVEL}")"
+          # 新しいバージョン名で GitHub Release を作成し、リリースノートは自動生成する
+          gh release create "${version}" --title "${version}" --generate-notes
