@@ -32,6 +32,6 @@ jobs:
           git config --global user.name "${USERNAME}"
           git config --global user.email "${EMAIL}"
           # 指定された bump-level に応じてバージョン番号を更新し、新しいバージョン文字列を受け取る
-          version="$(.github/scripts/bump.sh "${BUMP_LEVEL}")"
+          version="$(bash .github/scripts/bump.sh "${BUMP_LEVEL}")"
           # 新しいバージョン名で GitHub Release を作成し、リリースノートは自動生成する
           gh release create "${version}" --title "${version}" --generate-notes
