@@ -4,6 +4,8 @@
 
 生成ファイルの更新、定期的なメンテナンス、ドキュメント自動更新のように、「ワークフローで変更を作るところ」から「PR を作ってレビューに載せるところ」までを一気に自動化したい場面を想定しています。
 
+このリポジトリは GitHub Marketplace 公開を前提にした最小構成です。Marketplace の要件に合わせるため、`.github/workflows` のような workflow files は含めていません。
+
 ## できること
 
 - ワークフロー実行ごとに専用ブランチを作成します
@@ -200,47 +202,63 @@ jobs:
 
 ## テスト方法
 
-このリポジトリには、Action 自体を検証するためのワークフローが含まれています。
+GitHub Marketplace に公開する action repository には workflow files を含められません。そのため、この公開用リポジトリには CI 用 workflow を置いていません。
 
-- [`.github/workflows/test-action.yml`](./.github/workflows/test-action.yml)
+検証したい場合は、次のいずれかの方法を取るのが安全です。
 
-このワークフローは次を確認します。
+1. 別の開発用リポジトリを作り、そこからこの Action を呼び出してテストする
+2. 一時的なローカル検証用 workflow を別リポジトリに作り、`uses: owner/repo@ref` で試す
+3. Marketplace 公開前の作業ブランチでだけ workflow を使い、公開用タグには含めない
 
-1. テスト用ファイルを作る
-2. `uses: ./` でローカル Action を実行する
-3. 作成された pull request の title が期待どおりか確認する
-4. 最後にテスト用 PR を閉じ、ブランチを削除する
+最小の検証例は次のようになります。
+
+```yaml
+name: Test create-pr-action
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create test file
+        run: date > foo.md
+
+      - name: Run action
+        id: exercise
+        uses: TM-DataScientist/create-pr-action@v1
+        with:
+          message: Test
+```
 
 ## リリース方法
 
-公開用のタグ作成には、次のワークフローを使います。
+この公開用リポジトリでは、Marketplace 要件に合わせて release 用 workflow も含めていません。リリースは GitHub の Release 機能から手動で行います。
 
-- [`.github/workflows/release-action.yml`](./.github/workflows/release-action.yml)
+基本手順は次のとおりです。
 
-Actions タブから手動実行し、`bump-level` に `patch` / `minor` / `major` を指定してください。
-
-このワークフローは内部で [`.github/scripts/bump.sh`](./.github/scripts/bump.sh) を呼び出し、次を行います。
-
-- 既存タグから最新バージョンを判定する
-- 指定レベルに応じて次のバージョン番号を決める
-- `vX.Y.Z` タグを作成する
-- `vX` のメジャータグを更新する
-- GitHub Release を作成する
+1. `main` に公開したい状態を反映する
+2. `action.yml` の公開メタデータを確認する
+3. `vX.Y.Z` 形式のタグを作成する
+4. GitHub Releases で新しい release を作成する
+5. `Publish this Action to the GitHub Marketplace` を有効にして公開する
 
 利用者には、固定のフルバージョンよりも `@v1` のようなメジャータグを案内するのが一般的です。
+
+もし CI やリリース自動化を維持したい場合は、公開用 repo と開発用 repo を分ける運用が実務上は扱いやすいです。
 
 ## リポジトリ構成
 
 ```text
 .
 ├─ action.yml
-├─ README.md
-└─ .github
-   ├─ scripts
-   │  └─ bump.sh
-   └─ workflows
-      ├─ release-action.yml
-      └─ test-action.yml
+└─ README.md
 ```
 
 ## 補足

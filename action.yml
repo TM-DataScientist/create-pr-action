@@ -1,8 +1,6 @@
-name: Create PR
+name: TM DataScientist Create PR
 description: |
-  Modified files are committed and a pull request is created.
-  The pull request title and body both use the provided commit message.
-  This action requires `contents: write` and `pull-requests: write`.
+  Commits workspace changes, pushes a branch, and opens a pull request from a GitHub Actions workflow.
 inputs:
   message:
     required: true
