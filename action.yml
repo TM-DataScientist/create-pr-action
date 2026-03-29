@@ -1,0 +1,36 @@
+name: Create PR
+description: |
+  Modified files are committed and a pull request is created.
+  The pull request title and body both use the provided commit message.
+  This action requires `contents: write` and `pull-requests: write`.
+inputs:
+  message:
+    required: true
+    description: Commit message
+outputs:
+  branch:
+    value: ${{ steps.pr.outputs.branch }}
+    description: The created pull request branch
+runs:
+  using: composite
+  steps:
+    - id: pr
+      shell: bash
+      env:
+        USERNAME: github-actions[bot]
+        EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        MESSAGE: ${{ inputs.message }}
+        BRANCH: auto/${{ github.run_id }}/${{ github.run_attempt }}
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        echo "branch=${BRANCH}" >> "${GITHUB_OUTPUT}"
+        git config --global user.name "${USERNAME}"
+        git config --global user.email "${EMAIL}"
+        git switch -c "${BRANCH}"
+        git add .
+        git commit -m "${MESSAGE}"
+        git push origin "${BRANCH}"
+        gh pr create --head "${BRANCH}" --title "${MESSAGE}" --body "${MESSAGE}"
+branding:
+  color: green
+  icon: shield
